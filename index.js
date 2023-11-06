@@ -51,6 +51,22 @@ app.post("/reviewers", async (req, res) => {
   res.send(result);
 });
 
+app.get("/categories", async (req, res) => {
+  const cursor = await bookCategories.find();
+  const result = await cursor.toArray();
+  res.send(result);
+});
+app.get("/books", async (req, res) => {
+  const cursor = await bookCollection.find();
+  const result = await cursor.toArray();
+  res.send(result);
+});
+app.get("/reviewers", async (req, res) => {
+  const cursor = await reviewers.find();
+  const result = await cursor.toArray();
+  res.send(result);
+});
+
 app.get("/", (req, res) => {
   res.send("App is running");
 });
