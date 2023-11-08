@@ -90,6 +90,17 @@ app.post("/borrowed", async (req, res) => {
   if (borrowExist) {
     return res.status(200).send("You have already borrowed this book");
   }
+
+  const findBook = { _id: new ObjectId(id) };
+  const book = await bookCollection.findOne(findBook);
+  if (!book || book.quantity <= 0) {
+    return res.status(200).json({
+      quantity: true,
+      messaage: "Book is not available for borrowing.",
+    });
+  }
+  await bookCollection.updateOne(findBook, { $inc: { quantity: -1 } });
+
   const result = await borrowedBooks.insertOne(returnInfo);
   res.send(result);
 });
