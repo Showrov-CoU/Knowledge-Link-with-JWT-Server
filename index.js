@@ -34,22 +34,7 @@ const database = client.db("knowledgeDB");
 const bookCategories = database.collection("categories");
 const bookCollection = database.collection("books");
 const reviewers = database.collection("reviewers");
-
-app.post("/categories", async (req, res) => {
-  const categories = req.body;
-  const result = await bookCategories.insertMany(categories);
-  res.send(result);
-});
-app.post("/books", async (req, res) => {
-  const books = req.body;
-  const result = await bookCollection.insertMany(books);
-  res.send(result);
-});
-app.post("/reviewers", async (req, res) => {
-  const review = req.body;
-  const result = await reviewers.insertMany(review);
-  res.send(result);
-});
+const borrowedBooks = database.collection("BorrowedBooks");
 
 app.get("/categories", async (req, res) => {
   const cursor = await bookCategories.find();
@@ -66,7 +51,6 @@ app.get("/reviewers", async (req, res) => {
   const result = await cursor.toArray();
   res.send(result);
 });
-
 app.get("/category/:name", async (req, res) => {
   const categoryName = req.params.name;
   const query = { category: categoryName };
@@ -79,6 +63,35 @@ app.get("/bookdetails/:id", async (req, res) => {
   const query = { _id: new ObjectId(id) };
   const book = await bookCollection.findOne(query);
   res.send(book);
+});
+
+app.post("/categories", async (req, res) => {
+  const categories = req.body;
+  const result = await bookCategories.insertMany(categories);
+  res.send(result);
+});
+app.post("/books", async (req, res) => {
+  const books = req.body;
+  const result = await bookCollection.insertMany(books);
+  res.send(result);
+});
+app.post("/reviewers", async (req, res) => {
+  const review = req.body;
+  const result = await reviewers.insertMany(review);
+  res.send(result);
+});
+app.post("/borrowed", async (req, res) => {
+  const returnInfo = req.body;
+  const { id, email } = returnInfo;
+  // console.log(returnInfo);
+  // console.log(email, id);
+  const query = { id: id, email: email };
+  const borrowExist = await borrowedBooks.findOne(query);
+  if (borrowExist) {
+    return res.status(200).send("You have already borrowed this book");
+  }
+  const result = await borrowedBooks.insertOne(returnInfo);
+  res.send(result);
 });
 
 app.get("/", (req, res) => {
