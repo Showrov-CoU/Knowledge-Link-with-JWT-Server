@@ -1,5 +1,7 @@
 const express = require("express");
 const cors = require("cors");
+const cookieParser = require("cookie-parser");
+const jwt = require("jsonwebtoken");
 require("dotenv").config();
 
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
@@ -7,8 +9,14 @@ const port = process.env.PORT || 5000;
 
 const app = express();
 
-app.use(cors());
+app.use(
+  cors({
+    origin: ["http://localhost:5173"],
+    credentials: true,
+  })
+);
 app.use(express.json());
+app.use(cookieParser());
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.0vftcn5.mongodb.net/?retryWrites=true&w=majority`;
 
@@ -36,12 +44,46 @@ const bookCollection = database.collection("books");
 const reviewers = database.collection("reviewers");
 const borrowedBooks = database.collection("BorrowedBooks");
 
+app.post("/jwt", async (req, res) => {
+  const user = req.body;
+  const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+    expiresIn: "1h",
+  });
+  res.cookie("token", token, {
+    httpOnly: true,
+    secure: true,
+    sameSite: "none",
+  });
+  res.send({ success: true });
+});
+app.post("/logout", async (req, res) => {
+  const user = req.body;
+  console.log("logingOut", user);
+  res.clearCookie("token", { maxAge: 0 }).send({ success: true });
+});
+
+const verifyToken = (req, res, next) => {
+  const token = req?.cookies?.token;
+
+  // console.log("Midddd", token);
+  if (!token) {
+    return res.status(401).send({ messaage: "unauthorized access" });
+  }
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(401).send({ messaage: "unauthorized access" });
+    }
+    req.user = decoded;
+    next();
+  });
+};
+
 app.get("/categories", async (req, res) => {
   const cursor = await bookCategories.find();
   const result = await cursor.toArray();
   res.send(result);
 });
-app.get("/books", async (req, res) => {
+app.get("/books", verifyToken, async (req, res) => {
   const sortObj = {};
   // const {filter} = req.query;
   // console.log(filter);
@@ -60,9 +102,12 @@ app.get("/reviewers", async (req, res) => {
   const result = await cursor.toArray();
   res.send(result);
 });
-app.get("/borrowBooks/:email", async (req, res) => {
+app.get("/borrowBooks/:email", verifyToken, async (req, res) => {
   const email = req.params.email;
   const query = { email: email };
+  if (email !== req.user.email) {
+    return res.status(403).send({ messaage: "forbidden access" });
+  }
   // console.log(email);
   const cursor = borrowedBooks.find(query);
   const result = await cursor.toArray();
@@ -99,8 +144,9 @@ app.post("/books", async (req, res) => {
   const result = await bookCollection.insertMany(books);
   res.send(result);
 });
-app.post("/addbooks", async (req, res) => {
+app.post("/addbooks", verifyToken, async (req, res) => {
   const book = req.body;
+  // console.log("token owner", req.user);
   //console.log(book);
   const result = await bookCollection.insertOne(book);
   res.send(result);
