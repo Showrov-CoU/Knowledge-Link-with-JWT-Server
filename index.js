@@ -42,7 +42,16 @@ app.get("/categories", async (req, res) => {
   res.send(result);
 });
 app.get("/books", async (req, res) => {
-  const cursor = await bookCollection.find();
+  const sortObj = {};
+  // const {filter} = req.query;
+  // console.log(filter);
+  // const order = Number(req.query.order);
+
+  // if (filter) {
+  //   sortObj[filter] = order;
+  //   console.log(sortObj);
+  // }
+  const cursor = await bookCollection.find().sort(sortObj);
   const result = await cursor.toArray();
   res.send(result);
 });
@@ -71,6 +80,13 @@ app.get("/bookdetails/:id", async (req, res) => {
   const query = { _id: new ObjectId(id) };
   const book = await bookCollection.findOne(query);
   res.send(book);
+});
+app.get("/filter", async (req, res) => {
+  // const filter = req.params.filter;
+  // console.log(filter);
+  const coursor = await bookCollection.find().sort({ quantity: -1 });
+  const result = await coursor.toArray();
+  res.send(result);
 });
 
 app.post("/categories", async (req, res) => {
