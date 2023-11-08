@@ -51,6 +51,14 @@ app.get("/reviewers", async (req, res) => {
   const result = await cursor.toArray();
   res.send(result);
 });
+app.get("/borrowBooks/:email", async (req, res) => {
+  const email = req.params.email;
+  const query = { email: email };
+  // console.log(email);
+  const cursor = borrowedBooks.find(query);
+  const result = await cursor.toArray();
+  res.send(result);
+});
 app.get("/category/:name", async (req, res) => {
   const categoryName = req.params.name;
   const query = { category: categoryName };
@@ -102,6 +110,18 @@ app.post("/borrowed", async (req, res) => {
   await bookCollection.updateOne(findBook, { $inc: { quantity: -1 } });
 
   const result = await borrowedBooks.insertOne(returnInfo);
+  res.send(result);
+});
+
+app.delete("/borrowBooks/:id", async (req, res) => {
+  const id = req.params.id;
+  const query = { _id: new ObjectId(id) };
+  const returnBook = await borrowedBooks.findOne(query);
+  // console.log(returnBook);
+  const incQuery = { _id: new ObjectId(returnBook.id) };
+  await bookCollection.updateOne(incQuery, { $inc: { quantity: +1 } });
+
+  const result = await borrowedBooks.deleteOne(query);
   res.send(result);
 });
 
