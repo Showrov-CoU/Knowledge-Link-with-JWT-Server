@@ -83,6 +83,12 @@ app.post("/books", async (req, res) => {
   const result = await bookCollection.insertMany(books);
   res.send(result);
 });
+app.post("/addbooks", async (req, res) => {
+  const book = req.body;
+  //console.log(book);
+  const result = await bookCollection.insertOne(book);
+  res.send(result);
+});
 app.post("/reviewers", async (req, res) => {
   const review = req.body;
   const result = await reviewers.insertMany(review);
