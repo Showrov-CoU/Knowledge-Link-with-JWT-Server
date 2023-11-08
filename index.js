@@ -131,6 +131,26 @@ app.delete("/borrowBooks/:id", async (req, res) => {
   res.send(result);
 });
 
+app.put("/books/:id", async (req, res) => {
+  const id = req.params.id;
+  const updateBook = req.body;
+  const query = { _id: new ObjectId(id) };
+  const options = { upsert: true };
+  const book = {
+    $set: {
+      image: updateBook.image,
+      name: updateBook.name,
+      author: updateBook.author,
+      category: updateBook.category,
+      quantity: updateBook.quantity,
+      rating: updateBook.rating,
+      description: updateBook.description,
+    },
+  };
+  const result = await bookCollection.updateOne(query, book, options);
+  res.send(result);
+});
+
 app.get("/", (req, res) => {
   res.send("App is running");
 });
