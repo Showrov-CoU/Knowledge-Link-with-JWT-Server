@@ -11,10 +11,15 @@ const app = express();
 
 app.use(
   cors({
-    origin: ["http://localhost:5173"],
+    origin: [
+      "https://knowledgelink-c1c83.web.app",
+      "https://knowledgelink-c1c83.firebaseapp.com",
+      "http://localhost:5173",
+    ],
     credentials: true,
   })
 );
+// app.use(cors());
 app.use(express.json());
 app.use(cookieParser());
 
@@ -46,21 +51,28 @@ const borrowedBooks = database.collection("BorrowedBooks");
 
 app.post("/jwt", async (req, res) => {
   const user = req.body;
+
+  const expirationDate = new Date();
+  expirationDate.setDate(expirationDate.getDate() + 7);
   const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
     expiresIn: "1h",
   });
-  res.cookie("token", token, {
-    httpOnly: true,
-    secure: true,
-    sameSite: "none",
-  });
-  res.send({ success: true });
+  res
+    .cookie("token", token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "none",
+      expires: expirationDate,
+    })
+    .send({ success: true });
+  // res.send({ token });
+  // res.send({ success: true });
 });
-app.post("/logout", async (req, res) => {
-  const user = req.body;
-  console.log("logingOut", user);
-  res.clearCookie("token", { maxAge: 0 }).send({ success: true });
-});
+// app.post("/logout", async (req, res) => {
+//   const user = req.body;
+//   console.log("logingOut", user);
+//   res.clearCookie("token", { maxAge: 0 }).send({ success: true });
+// });
 
 const verifyToken = (req, res, next) => {
   const token = req?.cookies?.token;
@@ -72,9 +84,12 @@ const verifyToken = (req, res, next) => {
   jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
     if (err) {
       return res.status(401).send({ messaage: "unauthorized access" });
+    } else {
+      console.log(decoded);
+      req.decode = decoded;
+      next();
     }
-    req.user = decoded;
-    next();
+    // req.user = decoded;
   });
 };
 
@@ -83,7 +98,7 @@ app.get("/categories", async (req, res) => {
   const result = await cursor.toArray();
   res.send(result);
 });
-app.get("/books", verifyToken, async (req, res) => {
+app.get("/books", async (req, res) => {
   const sortObj = {};
   // const {filter} = req.query;
   // console.log(filter);
@@ -102,12 +117,12 @@ app.get("/reviewers", async (req, res) => {
   const result = await cursor.toArray();
   res.send(result);
 });
-app.get("/borrowBooks/:email", verifyToken, async (req, res) => {
+app.get("/borrowBooks/:email", async (req, res) => {
   const email = req.params.email;
   const query = { email: email };
-  if (email !== req.user.email) {
-    return res.status(403).send({ messaage: "forbidden access" });
-  }
+  // if (email !== req.user.email) {
+  //   return res.status(403).send({ messaage: "forbidden access" });
+  // }
   // console.log(email);
   const cursor = borrowedBooks.find(query);
   const result = await cursor.toArray();
@@ -144,7 +159,7 @@ app.post("/books", async (req, res) => {
   const result = await bookCollection.insertMany(books);
   res.send(result);
 });
-app.post("/addbooks", verifyToken, async (req, res) => {
+app.post("/addbooks", async (req, res) => {
   const book = req.body;
   // console.log("token owner", req.user);
   //console.log(book);
