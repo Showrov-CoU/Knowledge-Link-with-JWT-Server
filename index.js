@@ -100,6 +100,9 @@ app.get("/categories", async (req, res) => {
 });
 app.get("/books", async (req, res) => {
   const sortObj = {};
+  if (req.query.sortBy) {
+    sortObj[req.query.sortBy] = req.query.order === "desc" ? -1 : 1;
+  }
   // const {filter} = req.query;
   // console.log(filter);
   // const order = Number(req.query.order);
